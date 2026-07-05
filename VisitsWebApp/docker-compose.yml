@@ -1,0 +1,9 @@
+version: '3' # version of docker-compose we are using.(5.1.0)
+services:  # services which are gonna take form of defined containers
+  redis-server:  # container/service 1
+    image: 'redis'
+  node-app:  # container/service 2
+    restart: always # managing this container in case it gets crashed.
+    build: . # look into the current directory and build the image using Dockerfile.
+    ports:
+      - "4001:8081" # from port on local machine :: to port in container.
