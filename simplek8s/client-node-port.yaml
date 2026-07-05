@@ -1,0 +1,18 @@
+apiVersion: v1
+## Service is used to configure the network.
+kind: Service
+metadata:
+  name: client-node-ports
+spec:
+  ## Type defines which service we want to use. 
+  ## Nodeport allows our container to talk to the outside world.
+  type: NodePort
+  ## It is a collection(array) of ports that needs to be opened up to the target object(client-pod). 
+  ports:
+    - port: 3050
+      targetPort: 3000
+      nodePort: 31515
+  ## Selector defines which Pod service needs to communicate with. It is the same
+  ## user-defined key:value pair we have defined in the client-pod under labels.
+  selector:
+    component: web

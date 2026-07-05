@@ -1,0 +1,21 @@
+## Each apiVersion has different sets of object types in it for accessible.
+apiVersion: v1
+## kind is a type of object we want to create in our k8 cluster to run our application.
+## there are different types: StatefulSet, replicaContainer, Pod, service etc and all
+## have their ouw purpose such as monitoring the container etc.
+## Pod is used to run the container.
+kind: Pod
+metadata:
+  ## Name is used for logging purpose here as well as under spec.containers.
+  name: client-pod
+  ## Labels are used by the service to communicate. It is a user-defined key-value pair.
+  labels:
+    component: web
+spec:
+  containers:
+    - name: client
+      image: stephengrider/multi-client
+      ## Below configuration is not sufficient for kubernetes to expose port 3000 to
+      ## the outer world. for that, we need to create another n/w config file- client-node-port.yaml
+      ports:
+        - containerPort: 3000

@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client-deployment
+spec:
+  ## number of the different pods to be created.
+  replicas: 1
+  ## To get the handle on the newly created pod which has the label as component:web
+  ## because deployment-config doesn't create the Pod. It is created by master and
+  ## hence deployment-config needs to know somehow which pod is created to identify
+  ## and that's why below matchLabels is added.
+  selector:
+    matchLabels:
+      component: web
+  ## pod-template - every pod created by deployment should have the same config. It
+  ## can have multiple labels attached to the pods.For ex- 2 Pods with one label and
+  ## remaining of another label.
+  template:
+    metadata:
+      labels:
+        component: web
+    spec:
+      containers:
+        - name: client
+          image: stephengrider/multi-client
+          ports:
+            - containerPort: 3000
