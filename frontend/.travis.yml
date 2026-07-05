@@ -1,0 +1,33 @@
+# tells travis CI(for CI/CD) to have super user access to run docker
+sudo: required
+services:
+  - docker
+
+# Add all the commands here which needs to be run before running the test-suits
+# or before deploying your changes. In our case, we need to build the docker-image
+# so that travis can run the docker using that image id(tag prerna31/frontend)
+# to run the test(npm run test)
+before_install:
+  - docker build -t prerna31/frontend -f Dockerfile.dev .
+
+# Add all the commands required to run the test-suits
+# -e CI=true is added so that test-suit can exit post execution by itself.
+# we could add -- --coverage after npm run test command too. Without these, the npm run test
+# command doesn't quit after execution until user enters 'q'
+script:
+  - docker run -e CI=true prerna31/frontend npm run test
+
+# Section to deploy our application in AWS. Travis already comes up with a list
+# of providers/hosting providers.
+deploy:
+  provider: elasticbeanstalk
+  region: "us-west-2" # region where EBS is created.
+  app: "docker" # application name given while creating EBS app
+  env: "Docker-env" # environment name given while creating EBS app.
+  bucket_name: "elasticbeanstalk-us-west-2-306476627547" # Travis gips all files from the github repo and upload in S3 bucket which EBS can pick that up to deploy.It uses by many EBS so need to mention path
+  bucket_path: "docker" # it is created when travis deploy the application first time.
+  on:
+    branch: master
+    access_key_id: $AWS_ACCESS_KEY # Environment Variables being set on Travis UI
+    secret_access_key: "$AWS_SECRET_KEY" # Environment Variables being set on Travis UI. Generated whilecreating a user on IAM with admin-EBS policy attached to it.
+  
