@@ -1,0 +1,19 @@
+version: '3'
+services:
+  web:
+    build:
+      context: . # want to pick dockerfile from the same level where docker-compose file resides.
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - /app/node_modules # bookmarking the volume
+      - .:/app # mapping current directory to /app.
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - /app/node_modules
+      - .:/app 
+    command: ["npm", "run", "test"]
