@@ -1,0 +1,77 @@
+apiVersion: skaffold/v4beta11
+kind: Config
+## Mention all the different images skaffold should manage.
+build:
+  local:
+    ## Not to push the images to the registry.
+    push: false
+  artifacts:
+    - image: stephengrider/multi-client
+      ## Mention the folder where image is build from.
+      context: client
+      docker:
+        dockerfile: Dockerfile.dev
+      ## Skaffold sync: copy changed files into running containers (fast path-mode 2).
+      ## Requires CHOKIDAR_USEPOLLING in Dockerfile.dev. If a changed file is 
+      ## not listed under sync, Skaffold rebuilds the image and redeploys instead(mode1).
+      sync:
+        manual:
+          - src: "src/**/*.js"
+            dest: .
+          - src: "src/**/*.css"
+            dest: .
+          - src: "src/**/*.html"
+            dest: .
+    - image: stephengrider/multi-server
+      context: server
+      docker:
+        dockerfile: Dockerfile.dev
+      sync:
+        manual:
+          - src: "*.js"
+            dest: .
+    - image: stephengrider/multi-worker
+      context: worker
+      docker:
+        dockerfile: Dockerfile.dev
+      sync:
+        manual:
+          - src: "*.js"
+            dest: .
+## Mention all the different config files skaffold should manage.
+manifests:
+  rawYaml:
+    - k8s-dev/database-persistent-volume-claim.yaml
+    - k8s-dev/postgres-deployment.yaml
+    - k8s-dev/postgres-cluster-ip-service.yaml
+    - k8s-dev/redis-deployment.yaml
+    - k8s-dev/redis-cluster-ip-service.yaml
+    - k8s-dev/client-deployment.yaml
+    - k8s-dev/server-deployment.yaml
+    - k8s-dev/worker-deployment.yaml
+    - k8s-dev/server-cluster-ip-service.yaml
+    - k8s-dev/client-cluster-ip-service.yaml
+    - k8s-dev/ingress-service.yaml
+## deploy tells Skaffold how to apply those manifests to the cluster.
+## kubectl means Skaffold runs `kubectl apply` against the files listed above.
+deploy:
+  kubectl:
+    ## Docker Desktop builds in Docker but K8s runs from containerd inside the node.
+    ## With local-cluster=true, Skaffold ALWAYS deploys using an image-ID hash tag
+    ## (e.g. multi-server:1ad4923...), not :latest or :dev — tagPolicy does not change this.
+    ## This pre-deploy hook imports each built image into containerd and tags it with that hash
+    ## so pods start without pulling from Docker Hub.
+    hooks:
+      before:
+        - host:
+            command:
+              - sh
+              - -c
+              - |
+                NODE=$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}')
+                for img in stephengrider/multi-client stephengrider/multi-server stephengrider/multi-worker; do
+                  HASH=$(docker inspect -f '{{.Id}}' "${img}:latest" | sed 's/sha256://')
+                  docker save "${img}:latest" | docker exec -i "${NODE}" ctr -n k8s.io images import -
+                  docker exec "${NODE}" ctr -n k8s.io images tag "docker.io/${img}:latest" "docker.io/${img}:${HASH}"
+                done
+            os: [darwin, linux]
