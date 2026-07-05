@@ -1,0 +1,43 @@
+
+dist: focal
+sudo: required
+services:
+  - docker
+env:
+  global:
+    ## SHA is the short hash of the git commit.
+    - SHA=$(git rev-parse --short HEAD)
+    ## This is to disable the prompts from the Google Cloud SDK.
+    - CLOUDSDK_CORE_DISABLE_PROMPTS=1
+before install:
+  ## The command u get after encrypting the service-account.json file in travis CI to decrypt it and place it in the root directory.
+  - openssl aes-256-cbc -K $encrypted_0c35eebf403c_key -iv $encrypted_0c35eebf403c_iv -in service-account.json.enc -out service-account.json -d;
+  ## Downloads the Google Cloud SDK and Install it locally on the little instance assigned by travis CI.
+  - curl https://sdk.cloud.google.com | bash > /dev/null;
+  ## Source the path of the installed Google Cloud SDK in the current shell.
+  - source $HOME/google-cloud-sdk/path.bash.inc;
+  ## Install the kubectl command too.
+  - gcloud components update kubectl;
+  ## Authorise the travis CI to access the google Cloud platform. here activate-service-account = IAM use in AWS and 
+  ## service-account.json contains the service credentials which we need to create in google-cloud. For travis CI
+  ## to use the service-account.json(downloaded from GCP), install travis cI in your local, encrypt the service-account.json
+  ## file and upload it to travis CI. Then, decrypt the file in travis CI to use it. The below mentioned service-account.json
+  ## file is the same file which is kept in the root directory of the project by the very first command in the before install script.
+  - gcloud auth activate-service-account --key-file service-account.json;
+  ## Info about the project, which region, which zone, which cluster GCP needs to use.
+  - gcloud config set project skilful-berm-214822
+  - gcloud config set compute/zone us-central1-a
+  - gcloud container clusters get-credentials multi-cluster
+  ## Login to Docker Hub using credentials configured in travis CI.
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  ## Build the images, tag them and push them to Docker Hub.
+  - docker build -t stephengrider/react-test -f ./client/Dockerfile.dev
+
+script:
+  - docker run -e CI=true stephengrider/react-test npm test
+
+deploy:
+  provider: script
+  script: bash ./deploy.sh
+  on:
+    branch: master
