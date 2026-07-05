@@ -1,0 +1,40 @@
+sudo: required
+services:
+  - docker
+
+## you can add more docker builds command to build other impages too
+before install:
+  - docker build -t prerna31/react-test -f ./client/Dockerfile.dev ./client
+
+## you can add all the scripts you want to run corressponding to each above 
+## mentioend docker image
+script:
+  - docker run -e CI=true prerna31/react-test npm test
+
+## Builds prod ready images which will be pushed to the docker hub
+after-success:
+  - docker build -t prerna31/multi-client ./client
+  - docker build -t prerna31/multi-nginx ./nginx
+  - docker build -t prerna31/multi-server ./server
+  - docker build -t prerna31/multi-worker ./worker
+  # Log in to the docker CLI. Store your docker_id and docker_password on
+  # travis/environment variables.
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # Take those images and push them to docker hub
+  - docker push prerna31/multi-client
+  - docker push prerna31/multi-nginx
+  - docker push prerna31/multi-server
+  - docker push prerna31/multi-worker
+
+## Deploy the projects in EBS
+deploy:
+  provider: elasticbeanstalk
+  region: 'us-west-2'
+  app: 'multi-docker'
+  env: 'MultiDocker-env'
+  bucket_name: 'elasticbeanstalk-us-west-2-215611693336'
+  bucket_path: 'docker-multi'
+  on:
+    branch: master
+  access_key_id: $AWS_ACCESS_KEY
+  secret_access_key: $AWS_SECRET_KEY
