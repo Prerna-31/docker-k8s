@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: worker
+  template:
+    metadata:
+      labels:
+        component: worker
+    spec:
+      containers:
+        - name: worker
+          image: stephengrider/multi-worker
+          ## Worker is not being accessed by any other object type(deployment, service) so containerPort
+          ## is not required.
+          ## Env variables required by worker to connect with redis. The below values are
+          ## fetched from redis-cluster-ip-service which is responsible to connect the redis
+          ## pod by other pods available in the k8 cluster.
+          env:
+            - name: REDIS_HOST
+              value: redis-cluster-ip-service
+            - name: REDIS_PORT
+              value: '6379'

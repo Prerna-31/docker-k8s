@@ -1,0 +1,27 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  ## {domain-name}-com-tls
+  name: k8s-multi-com-tls
+spec:
+  ## Secret name to store the certificate. We don't need to create it beforehand. Cert-manager will create
+  ## it once it gets the certificate from the issuer/letsEncrypt.
+  secretName: k8s-multi-com
+  ## Reference to the issuer we want to use to get the certificate which is already created in the cluster using issuer.yaml file
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  ## Common name of the certificate written in bold. It is the domain name of the certificate.
+  commonName: k8s-multi.com
+  ## List of the domain names the certificate is associated with.
+  dnsNames:
+    - k8s-multi.com
+    - www.k8s-multi.com
+  # acme:
+  #   config:
+  #     - http01:
+  #         ingressClass: nginx
+  #       ## List of domains letsEncrypt will use to validate the ownership of the domain.
+  #       domains:
+  #         - k8-multi.com
+  #         - www.k8-multi.com

@@ -1,0 +1,20 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    ## The route to the letsencrypt server
+    server: https://acme-v02.api.letsencrypt.org/directory
+    ## Not necessary but good to have
+    email: 'prernagpt77@gmail.com'
+    ## Secret name to store the private key of letsencrypt. It tells cert-manager how to respond when letsencrypt asks for a challenge.
+    ## i.e. when letsencrypt validates the ownership of the domain. But we don't need to use it.
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    ## We want to use the HTTP-01 challenge type to obtain the certificate.
+    solvers:
+      - http01:
+          ingress:
+            class: nginx
+      

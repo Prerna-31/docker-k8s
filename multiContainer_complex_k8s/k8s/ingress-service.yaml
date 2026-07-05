@@ -1,0 +1,62 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-service
+  annotations: 
+    nginx.ingress.kubernetes.io/use-regex: 'true'
+    ## It tells the kubernetes how the copy of nginx should behave. The below thingy
+    ## removes /api/ with /.
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    ## It tells the ingress controller to use the letsEncrypt certificate.
+    cert-manager.io/cluster-issuer: 'letsencrypt-prod'
+    ## It tells the ingress controller to redirect the traffic to the https port.
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+spec:
+  ## It tells the ingress controller to serve the https traffic over the domains mentioned in the hosts. The certificate
+  ## which allows these traffic, is stored in the below mentioned secret name.
+  tls:
+    - hosts:
+        - k8-multi.com
+        - www.k8-multi.com
+      secretName: k8s-multi-com
+  ## It tells the kubernetes to create an ingress controller based on nginx project.
+  ingressClassName: nginx
+  rules:
+    ## If someone visits k8-multi.com, follow the below rules to route the traffic.
+    - host: k8-multi.com
+      http:
+        ## Tells that there are 2 paths over which k8 needs to route the traffic over. If
+        ## there is /, route the traffic to react server, if there is /api/, routes the
+        ## traffic to the express server.
+        paths:
+          - path: /?(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: client-cluster-ip-service
+                port:
+                  number: 3000
+          - path: /api/?(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: server-cluster-ip-service
+                port:
+                  number: 5000
+    - host: www.k8-multi.com
+      http:
+        paths:
+          - path: /?(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: client-cluster-ip-service
+                port:
+                  number: 3000
+          - path: /api/?(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: server-cluster-ip-service
+                port:
+                  number: 5000

@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: postgres
+  template:
+    metadata:
+      labels:
+        component: postgres
+    spec:
+      ## It just allocates the space for you but in order to assign it, we add volumeMounts
+      volumes:
+        - name: postgres-storage
+        ## claimName is the same name we have given in database-persistent-volume-claim.yaml file
+          persistentVolumeClaim: 
+            claimName: database-persistent-volume-claim
+      containers:
+        - name: postgres
+          image: postgres:13
+          ports:
+            - containerPort: 5432
+          ## The name of VolumneMounts should be same as specs/volumes and k8 takes all the data
+          ## and store it in the mountPath mentioend below.
+          volumeMounts:
+            - name: postgres-storage
+              ## MountPath mentions where the storage should be made available in the container.
+              mountPath: /var/lib/postgresql/data
+              subPath: postgres
+          env:
+            ## Postgres image expects POSTGRES_PASSWORD; server uses PGPASSWORD to connect.
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pgpassword
+                  key: PGPASSWORD
