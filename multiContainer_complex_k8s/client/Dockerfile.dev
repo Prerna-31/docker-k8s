@@ -1,0 +1,15 @@
+FROM node:lts-alpine
+ENV CI=true
+## Webpack dev server uses port 0 so hot reload works through the ingress proxy (not a fixed socket port).
+ENV WDS_SOCKET_PORT=0
+## Skaffold copies changed files into the container, but native file-watch events (inotify) often
+## do not fire inside Docker/Kubernetes. Polling re-checks files on disk so `npm start` rebuilds
+## after a sync instead of requiring a full image rebuild.
+ENV CHOKIDAR_USEPOLLING=true
+ENV WATCHPACK_POLLING=true
+
+WORKDIR '/app'
+COPY ./package.json ./package-lock.json ./
+RUN npm ci
+COPY . .
+CMD ["npm", "run", "start"]
