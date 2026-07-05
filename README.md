@@ -1,4 +1,4 @@
-# docler-k8s
+# docker-k8s
 
 A hands-on learning repository for **Docker** and **Kubernetes**. Each project builds on the last — from a single containerized Node app to a full multi-service stack deployed on Kubernetes and AWS.
 
